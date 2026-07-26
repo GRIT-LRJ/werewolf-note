@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>狼人杀记录器</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #1a1a2e; color: #e0e0e0; min-height: 100vh;
+    padding: 20px;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 {
+    text-align: center; font-size: 28px; padding: 20px 0;
+    color: #ff6b6b; letter-spacing: 2px;
+  }
+  h2 {
+    font-size: 18px; color: #ffd93d; margin-bottom: 12px;
+    padding-bottom: 6px; border-bottom: 1px solid #333;
+  }
+
+  /* 卡片 */
+  .card {
+    background: #16213e; border-radius: 12px; padding: 20px;
+    margin-bottom: 16px; border: 1px solid #0f3460;
+  }
+
+  .btn {
+    padding: 8px 20px; border-radius: 8px; border: none;
+    font-size: 14px; cursor: pointer; font-weight: 600;
+    transition: all 0.2s;
+  }
+  .btn-sm { padding: 4px 12px; font-size: 12px; }
+  .btn-add { background: #0f3460; color: #ffd93d; }
+  .btn-add:hover { background: #1a4a7a; }
+  .btn-del { background: #3a0a0a; color: #ff6b6b; }
+  .btn-del:hover { background: #5a0a0a; }
+
+  /* 警上警下 */
+  .police-row {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+  }
+  .police-row label {
+    font-size: 15px; font-weight: 700; white-space: nowrap; min-width: 45px;
+  }
+  .police-row label.up-label { color: #ffd93d; }
+  .police-row label.down-label { color: #4ecdc4; }
+  .police-row input {
+    flex: 1; padding: 8px 12px; border-radius: 8px;
+    border: 1px solid #0f3460; background: #1a1a2e; color: #e0e0e0;
+    font-size: 14px;
+  }
+
+  /* 发言区 */
+  .speech-list { display: flex; flex-direction: column; gap: 10px; }
+  .speech-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: #1a1a2e; border-radius: 8px; padding: 12px;
+  }
+  .speech-item .speech-num {
+    width: 42px; height: 32px; border-radius: 16px;
+    background: #0f3460; border: none; color: #fff;
+    font-weight: 700; font-size: 14px; text-align: center;
+    flex-shrink: 0; outline: none; line-height: 32px;
+    -moz-appearance: textfield;
+  }
+  .speech-item .speech-num::-webkit-outer-spin-button,
+  .speech-item .speech-num::-webkit-inner-spin-button {
+    -webkit-appearance: none; margin: 0;
+  }
+  .speech-item .speech-num:focus { background: #1a4a7a; box-shadow: 0 0 0 2px #ffd93d; }
+  .speech-item textarea {
+    flex: 1; min-height: 50px; padding: 8px 12px;
+    border-radius: 8px; border: 1px solid #0f3460;
+    background: #16213e; color: #e0e0e0; font-size: 14px;
+    resize: vertical; font-family: inherit;
+  }
+  .speech-item textarea:focus {
+    outline: none; border-color: #ffd93d;
+  }
+
+  /* 响应式 */
+  @media (max-width: 600px) {
+    body { padding: 8px; }
+    h1 { font-size: 22px; padding: 12px 0; }
+    h2 { font-size: 16px; }
+    .card { padding: 12px; margin-bottom: 10px; }
+    .police-row label { min-width: auto; }
+    .police-row input { font-size: 16px; padding: 10px 12px; }
+    .speech-item { padding: 10px; gap: 8px; }
+    .speech-item textarea { font-size: 16px; min-height: 60px; }
+    .speech-item .speech-num { width: 44px; height: 34px; font-size: 16px; line-height: 34px; }
+    .btn-sm { padding: 8px 16px; font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🐺 狼人杀记录器</h1>
+
+  <!-- 警上警下 -->
+  <div class="card" id="policeCard">
+    <h2>👮 上警情况 </h2>
+    <div class="police-row">
+      <label class="up-label">警上：</label>
+      <input type="text" id="policeUp" placeholder="例如：1、3、5、7">
+    </div>
+    <div class="police-row">
+      <label class="down-label">警下：</label>
+      <input type="text" id="policeDown" placeholder="例如：2、4、6、8">
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="color:#ffd93d; font-size:15px; font-weight:700;">警徽流：</label>
+      <input type="text" id="badgeFlow" placeholder="例如：先3后7，4金水改8"
+        style="display:block; width:100%; margin-top:4px; padding:8px 12px; border-radius:8px;
+        border:1px solid #0f3460; background:#1a1a2e; color:#e0e0e0; font-size:14px;">
+    </div>
+    <div id="badgeFlowExtra"></div>
+    <button class="btn btn-add btn-sm" onclick="addBadgeFlowRow()" style="margin-top:4px">+ 添加新行</button>
+  </div>
+
+  <!-- 白天发言 -->
+  <div class="card" id="speechCard">
+    <h2>💬 白天发言记录</h2>
+    <div class="speech-list" id="speechList"></div>
+    <button class="btn btn-add btn-sm" onclick="addSpeechRow()" style="margin-top:8px">+ 添加新发言</button>
+  </div>
+</div>
+
+<script>
+const playerCount = 12;
+
+// ---- 警徽流动态行 ----
+function addBadgeFlowRow() {
+  const container = document.getElementById('badgeFlowExtra');
+  const div = document.createElement('div');
+  div.style.cssText = 'margin-bottom:6px;';
+  div.innerHTML = `
+    <input type="text" placeholder="警徽流补充..."
+      style="display:block; width:100%; padding:8px 12px; border-radius:8px;
+      border:1px solid #0f3460; background:#1a1a2e; color:#e0e0e0; font-size:14px;">
+  `;
+  container.appendChild(div);
+}
+
+// ---- 白天发言 ----
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function addSpeechRow() {
+  const list = document.getElementById('speechList');
+  const div = document.createElement('div');
+  div.className = 'speech-item';
+  div.innerHTML = `
+    <input class="speech-num" type="number" min="1" max="${playerCount}" placeholder="号">
+    <textarea placeholder="发言内容..." oninput="autoResize(this)"></textarea>
+  `;
+  list.appendChild(div);
+}
+
+// 页面加载时初始化一行发言
+addSpeechRow();
+</script>
+</body>
+</html>
